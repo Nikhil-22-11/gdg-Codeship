@@ -6,25 +6,22 @@ import * as admin from 'firebase-admin';
 import path from 'path';
 import fs from 'fs';
 
-// Initialize Firebase Admin with the downloaded Service Account Key
+// Initialize Firebase Admin — always start the server, even if Firebase fails
 try {
   const keyPath = path.join(__dirname, '../serviceAccountKey.json');
-  
   if (fs.existsSync(keyPath)) {
     const serviceAccount = require(keyPath);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    console.log("🔥 SUCCESS: Firebase Admin securely connected using local serviceAccountKey.json");
-  } else if (process.env.K_SERVICE || process.env.GOOGLE_CLOUD_PROJECT) {
-    // If running in Google Cloud Run / App Engine, use Application Default Credentials
-    admin.initializeApp();
-    console.log("☁️ SUCCESS: Firebase Admin securely connected using GCP Application Default Credentials!");
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    console.log("🔥 Firebase connected via serviceAccountKey.json");
   } else {
-    console.warn("⚠️ Warning: serviceAccountKey.json not found and not running in GCP. Using local fallback.");
+    // On Google Cloud Run, ADC is available automatically via the service account
+    admin.initializeApp();
+    console.log("☁️ Firebase connected via Application Default Credentials (GCP)");
   }
 } catch (error: any) {
-  console.error("❌ Failed to initialize Firebase:", error.message);
+  // Log but do NOT crash — server must still start so Cloud Run health check passes
+  console.error("⚠️ Firebase init warning:", error.message);
+  console.warn("Server continuing without Firebase — some API routes may fail.");
 }
 
 const app = express();
