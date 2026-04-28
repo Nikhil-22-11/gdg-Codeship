@@ -42,7 +42,7 @@ const frontendPath = process.env.FRONTEND_PATH ||
 if (fs.existsSync(frontendPath)) {
   console.log(`📦 Serving static frontend from: ${frontendPath}`);
   app.use(express.static(frontendPath));
-  app.get('*', (req, res) => {
+  app.get('/{*path}', (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'));
   });
 } else {
