@@ -39,8 +39,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Disaster Response OS Backend is running.' });
 });
 
-// Serve static frontend files (assumes frontend is built to root dist folder)
-const frontendPath = path.join(__dirname, '../../dist');
+// Serve static frontend files — in Docker, frontend dist is at /dist; locally at ../../dist
+const frontendPath = process.env.FRONTEND_PATH || 
+  (fs.existsSync('/dist') ? '/dist' : path.join(__dirname, '../../dist'));
 if (fs.existsSync(frontendPath)) {
   console.log(`📦 Serving static frontend from: ${frontendPath}`);
   app.use(express.static(frontendPath));
