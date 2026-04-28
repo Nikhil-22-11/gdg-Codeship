@@ -1,32 +1,42 @@
-# Stage 1: Build the React frontend
+# ---- Stage 1: Build Frontend ----
 FROM node:20-alpine AS frontend-builder
-WORKDIR /app
-COPY package*.json ./
+WORKDIR /frontend
+# Copy frontend package files
+COPY package.json package-lock.json* ./
 RUN npm ci
-COPY . .
+# Copy frontend source
+COPY src ./src
+COPY public ./public
+COPY index.html ./
+COPY vite.config.ts ./
+COPY tsconfig*.json ./
+COPY tailwind.config.ts ./
+COPY postcss.config.js ./
+COPY components.json ./
 RUN npm run build
 
-# Stage 2: Build the Node.js backend
+# ---- Stage 2: Build Backend ----
 FROM node:20-alpine AS backend-builder
-WORKDIR /app
-COPY backend/package*.json ./
+WORKDIR /backend
+COPY backend/package.json backend/package-lock.json* ./
 RUN npm ci
-COPY backend/ ./
+COPY backend/src ./src
+COPY backend/tsconfig.json ./
 RUN npm run build
 
-# Stage 3: Final production image
+# ---- Stage 3: Production Image ----
 FROM node:20-alpine
 WORKDIR /app
 
-# Copy backend production dependencies
-COPY backend/package*.json ./
+# Install only production backend dependencies
+COPY backend/package.json ./
 RUN npm ci --only=production
 
 # Copy compiled backend
-COPY --from=backend-builder /app/dist ./dist
+COPY --from=backend-builder /backend/dist ./dist
 
-# Copy compiled frontend into sibling `dist` folder (backend looks for ../../dist)
-COPY --from=frontend-builder /app/dist /dist
+# Copy compiled frontend to /dist (root level)
+COPY --from=frontend-builder /frontend/dist /dist
 
 ENV PORT=8080
 EXPOSE 8080
